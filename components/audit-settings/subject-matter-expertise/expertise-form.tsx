@@ -1,0 +1,13 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
+import { readSubjectMatterExpertise, writeSubjectMatterExpertise, type ExpertiseStatus, type SubjectMatterExpertise } from "@/data/subject-matter-expertise";
+
+export function ExpertiseForm({expertiseId}:{expertiseId?:string}){
+  const router=useRouter();const existing=useMemo(()=>expertiseId?readSubjectMatterExpertise().find((item)=>item.id===expertiseId):undefined,[expertiseId]);const [form,setForm]=useState({name:existing?.name??"",status:(existing?.status??"Active") as ExpertiseStatus});const [error,setError]=useState("");
+  const save=()=>{const current=readSubjectMatterExpertise();if(!form.name.trim()){setError("Subject Matter Expertise is required.");return;}if(current.some((item)=>item.id!==existing?.id&&item.name.trim().toLowerCase()===form.name.trim().toLowerCase())){setError("An expertise area with this name already exists.");return;}setError("");const nextRecordNo=Math.max(0,...current.map((item)=>item.recordNo))+1;const record:SubjectMatterExpertise={id:existing?.id??`SME-${String(nextRecordNo).padStart(3,"0")}`,recordNo:existing?.recordNo??nextRecordNo,name:form.name.trim(),status:form.status};writeSubjectMatterExpertise(existing?current.map((item)=>item.id===record.id?record:item):[...current,record]);router.push(`/audit/settings/subject-matter-expertise?saved=${existing?"updated":"added"}`);};
+  return <div className="qualification-editor"><header className="qualification-editor-header"><div><Link href="/audit/settings/subject-matter-expertise"><ChevronLeft size={16}/>Subject Matter Expertise</Link><h2>{existing?"Edit Subject Matter Expertise":"Add Subject Matter Expertise"}</h2><p>{existing?"Update this expertise area.":"Add an expertise area that can be assigned to auditors."}</p></div><div className="qualification-header-actions"><button type="button" className="secondary-button" onClick={()=>router.back()}>Cancel</button><button type="button" className="primary-button" onClick={save}>{existing?"Save Changes":"Save Expertise"}</button></div></header><section className="qualification-form-section"><div className="qualification-form-grid expertise-form-grid"><label><span>Subject Matter Expertise <i>*</i></span><input value={form.name} onChange={(event)=>setForm({...form,name:event.target.value})} placeholder="e.g. Design / Engineering"/>{error&&<small>{error}</small>}</label><label><span>Status</span><select value={form.status} onChange={(event)=>setForm({...form,status:event.target.value as ExpertiseStatus})}><option>Active</option><option>Inactive</option></select></label></div></section></div>;
+}
